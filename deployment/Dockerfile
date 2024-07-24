@@ -7,10 +7,10 @@ RUN apk add --no-cache build-base gcc
 WORKDIR /app
 
 # Copy the application files into the container
-COPY . .
+COPY . /app
 
 # Install dependencies
-RUN pip install --no-cache-dir flask scikit-learn pandas numpy
+RUN pip install --no-cache-dir flask pandas numpy scikit-learn
 
 # Expose the port
 EXPOSE 5000
