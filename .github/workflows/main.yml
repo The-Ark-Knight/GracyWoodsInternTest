@@ -1,0 +1,51 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run tests
+        run: |
+          pytest
+
+      - name: Build Docker image
+        run: |
+          docker build -t my-flask-app:latest .
+
+      - name: Push Docker image to Docker Hub
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: |
+          echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+          docker tag my-flask-app:latest sudothearkknight/census-api-flask:latest
+          docker push sudothearkknight/census-api-flask:latest
+
+      - name: Deploy to Server
+        env:
+          DEPLOYMENT_SERVER: ${{ secrets.DEPLOYMENT_SERVER }}
+          DEPLOYMENT_KEY: ${{ secrets.DEPLOYMENT_KEY }}
+        run: |
+          ssh -i $DEPLOYMENT_KEY user@$DEPLOYMENT_SERVER "docker pull sudothearkknight/census-api-flask:latest && docker run -d -p 80:80 sudothearkknight/census-api-flask:latest"
